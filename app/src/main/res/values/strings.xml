@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Modulus</string>
+    <string name="no_string">REPLACE ME</string>
+
+    <string name="nav_open">Nav Opened</string>
+    <string name="nav_closed">Nav Closed</string>
+</resources>
