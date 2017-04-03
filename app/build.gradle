@@ -7,7 +7,7 @@ android {
     buildToolsVersion "25.0.2"
     defaultConfig {
         applicationId "io.seamoss.modulus"
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdkVersion 25
         versionCode 1
         versionName "1.0"
@@ -76,6 +76,7 @@ dependencies {
     compile "com.squareup.retrofit2:adapter-rxjava:$RETROFIT_VERSION"
     compile "com.squareup.retrofit2:converter-gson:$RETROFIT_VERSION"
     compile files('libs/YouTubeAndroidPlayerApi.jar')
+    compile "com.google.firebase:firebase-invites:10.2.0"
 
 
     /*--------------------- Utils ---------------------*/
@@ -91,3 +92,5 @@ dependencies {
     compile 'com.jakewharton.timber:timber:4.4.0'
 
 }
+apply plugin: 'com.google.gms.google-services'
+

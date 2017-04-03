@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.design.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:weightSum="2"
+        android:orientation="vertical"
+        android:layout_height="match_parent">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_weight="1"
+            android:layout_height="match_parent">
+
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_weight="1"
+            android:layout_gravity="bottom"
+            android:layout_height="match_parent">
+
+            <Button
+                android:clickable="true"
+                android:textColor="@color/colorPrimaryText"
+                android:text="@string/facebook_auth"
+                android:id="@+id/authentication_facebook_sign_in"
+                android:background="@android:color/white"
+                android:layout_above="@+id/authentication_google_sign_in"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginBottom="16dp"/>
+
+            <Button
+                android:clickable="true"
+                android:textColor="@color/colorPrimaryText"
+                android:text="@string/google_auth"
+                android:id="@+id/authentication_google_sign_in"
+                android:background="@android:color/white"
+                android:layout_above="@+id/authentication_guest_sign_in"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginBottom="16dp"/>
+
+            <Button
+                android:clickable="true"
+                android:textColor="@color/colorPrimaryText"
+                android:text="@string/guest_auth"
+                android:id="@+id/authentication_guest_sign_in"
+                android:background="@android:color/white"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginBottom="16dp"/>
+
+        </RelativeLayout>
+
+    </LinearLayout>
+
+
+
+</android.support.design.widget.CoordinatorLayout>

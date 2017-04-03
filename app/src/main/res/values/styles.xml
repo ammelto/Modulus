@@ -24,7 +24,6 @@
         <item name="android:navigationBarColor" tools:targetApi="21">@color/colorPrimary</item>
         <item name="android:windowDrawsSystemBarBackgrounds" tools:targetApi="21">true</item>
 
-        <item name="android:alertDialogTheme">@style/AppTheme.CourseDialog</item>
     </style>
 
     <style name="AppTheme.ActionBarTheme" parent="@style/ThemeOverlay.AppCompat.ActionBar">
@@ -43,16 +42,16 @@
         <item name="android:background">?android:attr/listDivider</item>
     </style>
 
-    <style name="AppTheme.CourseDialog" parent="AppTheme">
-        <item name="android:textColorPrimary">@color/colorPrimaryText</item>
-        <item name="android:windowIsFloating">true</item>
-        <item name="android:windowNoTitle">true</item>
-    </style>
-
     <style name="AppTheme.DoNotDim" parent="AppTheme">
         <item name="android:backgroundDimEnabled">false</item>
         <item name="android:textColorPrimary">@color/colorPrimaryText</item>
         <item name="android:windowIsFloating">true</item>
         <item name="android:windowNoTitle">true</item>
     </style>
+
+    <style name="AppTheme.Signin" parent="AppTheme">
+        <item name="android:windowTranslucentNavigation">true</item>
+    </style>
+
+
 </resources>

@@ -4,4 +4,8 @@
 
     <string name="nav_open">Nav Opened</string>
     <string name="nav_closed">Nav Closed</string>
+
+    <string name="google_auth">Sign in with Google</string>
+    <string name="guest_auth">Continue as a guest</string>
+    <string name="facebook_auth">Sign in with Facebook</string>
 </resources>
