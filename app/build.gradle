@@ -86,6 +86,7 @@ dependencies {
     compile 'com.tbruyelle.rxpermissions:rxpermissions:0.7.0@aar'
     compile 'com.jakewharton.rxbinding:rxbinding:1.0.0'
     compile 'org.apache.directory.studio:org.apache.commons.io:2.4'
+    compile 'com.github.wendykierp:JTransforms:3.1'
 
     /*---------------------Debug stuff---------------------*/
     //

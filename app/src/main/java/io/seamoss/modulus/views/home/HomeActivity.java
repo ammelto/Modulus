@@ -62,12 +62,15 @@ public class HomeActivity extends BaseNavActivity implements HomeView, CaptureCo
     public void onFabClick() {
         if(getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)){
 
-            if(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED){
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                        Manifest.permission.CAMERA)) {
-                    showExplanation("Explaination", "Rationale", Manifest.permission.CAMERA, VIDEO_REQUEST_CODE);
+            if(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED){
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)
+                        || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)) {
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO}, VIDEO_REQUEST_CODE);
                 } else {
-                    requestPermission(Manifest.permission.CAMERA, VIDEO_REQUEST_CODE);
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO}, VIDEO_REQUEST_CODE);
                 }
             }else{
                 Intent intent = new Intent(this, CaptureActivity.class);
@@ -75,27 +78,6 @@ public class HomeActivity extends BaseNavActivity implements HomeView, CaptureCo
                 startActivity(intent);
             }
         }
-    }
-
-    private void showExplanation(String title,
-                                 String message,
-                                 final String permission,
-                                 final int permissionRequestCode) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle(title)
-                .setMessage(message)
-                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        requestPermission(permission, permissionRequestCode);
-                    }
-                });
-        builder.create().show();
-    }
-
-
-    private void requestPermission(String permissionName, int permissionRequestCode) {
-        ActivityCompat.requestPermissions(this,
-                new String[]{permissionName}, permissionRequestCode);
     }
 
     @Override

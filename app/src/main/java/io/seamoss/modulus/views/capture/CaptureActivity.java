@@ -43,6 +43,7 @@ import io.seamoss.modulus.Modulus;
 import io.seamoss.modulus.R;
 import io.seamoss.modulus.base.BaseActivity;
 import io.seamoss.modulus.base.nav.BaseNavActivity;
+import io.seamoss.modulus.hardware.Doppler;
 import rx.Observable;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
@@ -221,6 +222,7 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
         cameraDevice.close();
         cameraCaptureSessions.close();
         updateSubsription.unsubscribe();
+        Doppler.getInstance().stopCapture();
     }
 
     @Override
@@ -236,6 +238,7 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
                 .subscribeOn(AndroidSchedulers.from(capturePresenter.getHandler().getLooper()))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(capturePresenter::fetchSpeedData);
+        Doppler.getInstance().beginCapture();
     }
 
     @Override
