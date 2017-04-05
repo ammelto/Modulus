@@ -14,7 +14,10 @@ import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 
+import rx.Observable;
+import rx.subjects.PublishSubject;
 import timber.log.Timber;
 
 /**
@@ -34,6 +37,10 @@ public class Doppler {
 
     private Doppler(){
 
+    }
+
+    public Observable<Double> getSpeedObservable(){
+        return audio.getSubject().asObservable();
     }
 
     public void setFile(String s){
@@ -74,6 +81,7 @@ public class Doppler {
     private class Audio extends Thread
     {
         private boolean stopped = false;
+        private PublishSubject<Double> speedSubject = PublishSubject.create();
 
         /**
          * Give the thread high priority so that it's not canceled unexpectedly, and start it
@@ -98,9 +106,9 @@ public class Doppler {
          */
             try
             {
-                int N = AudioRecord.getMinBufferSize(8000, AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT);
-                recorder = new AudioRecord(MediaRecorder.AudioSource.MIC, 8000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, N*10);
-                track = new AudioTrack(AudioManager.STREAM_MUSIC, 8000,
+                int N = AudioRecord.getMinBufferSize(16000, AudioFormat.CHANNEL_IN_MONO,AudioFormat.ENCODING_PCM_16BIT);
+                recorder = new AudioRecord(MediaRecorder.AudioSource.MIC, 16000, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT, N*10);
+                track = new AudioTrack(AudioManager.STREAM_MUSIC, 16000,
                         AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, N*10, AudioTrack.MODE_STREAM);
                 recorder.startRecording();
 
@@ -109,10 +117,11 @@ public class Doppler {
              * Reads the data from the recorder and writes it to the audio track for playback.
              */
                 DoubleFFT_1D doubleFFT = new DoubleFFT_1D(256);
+                double movingAvg = 0;
                 while(!stopped)
                 {
                     double[] bufferD = new double[256];
-                    double[] bufferFFT = new double[256];
+                    double[] bufferFFT = new double[512];
                     short[] buffer = buffers[ix++ % buffers.length];
 
                     N = recorder.read(buffer,0,buffer.length);
@@ -125,15 +134,29 @@ public class Doppler {
                     }
 
                     doubleFFT.realForward(bufferD);
+                    double maxMag = 0;
+                    double maxFreq = 0;
+                    double average = 0;
                     for (int i = 0; i < bufferD.length/2; i++) {
                         double d = Math.sqrt(bufferD[i*2] * bufferD[i*2] + bufferD[i*2+1] * bufferD[i*2+1]);
-                        double m = (i * 8000 / 256);
-                        s = s + "," + d;
-                        mag = mag + "," + m;
+                        double m = (i * 16000 / 256);
+                        average += d;
+                        if(d > maxMag){
+                            maxMag = d;
+                            maxFreq = m;
+                        }
                     }
-
-                    Timber.d(s);
-                    Timber.d(mag);
+                    average = average/(bufferD.length/2);
+                    double speed = (maxFreq * 3*Math.pow(10,8))/(24*Math.pow(10,9) * 2);
+                    speed = speed/0.44704;
+                    if(movingAvg == 0) movingAvg = average;
+                    else{
+                        if(maxMag > movingAvg + 700000){
+                            speedSubject.onNext(speed);
+                            //Timber.d("Freq: " + maxFreq + " Mag:" + maxMag + " Avg: " + movingAvg + " Speed: " + speed + "mph");
+                        }
+                        movingAvg = (average + movingAvg)/2;
+                    }
                 }
             }
             catch(Throwable x)
@@ -150,6 +173,10 @@ public class Doppler {
                 track.stop();
                 track.release();
             }
+        }
+
+        public PublishSubject<Double> getSubject(){
+            return speedSubject;
         }
 
         /**

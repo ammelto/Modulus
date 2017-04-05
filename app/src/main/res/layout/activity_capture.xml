@@ -19,6 +19,7 @@
         android:layout_height="56dp">
 
         <TextView
+            android:id="@+id/capture_speed"
             android:padding="16dp"
             android:text="00 MPH"
             android:textColor="@android:color/white"

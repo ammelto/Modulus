@@ -26,6 +26,7 @@ import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.w3c.dom.Text;
@@ -33,7 +34,12 @@ import org.w3c.dom.Text;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
@@ -63,13 +69,18 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
     @BindView(R.id.overlay_capture)
     FrameLayout frameLayout;
 
+    @BindView(R.id.capture_speed)
+    TextView speedText;
+
     private String cameraId;
     private Size imageDimension;
+    private List<Double> speeds;
     private CameraDevice cameraDevice;
     private CaptureRequest.Builder captureRequestBuilder;
     private CameraCaptureSession cameraCaptureSessions;
     private PublishSubject<SurfaceTexture> onUpdateSubject;
     private Subscription updateSubsription;
+    private int frameCount = 0;
 
     @Inject
     CapturePresenter capturePresenter;
@@ -79,6 +90,7 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
         super.onCreate(savedInstanceState);
         Modulus.getInstance().getAppGraph().inject(this);
 
+        speeds = new ArrayList<>();
         assert textureView != null;
         textureView.setSurfaceTextureListener(textureListener);
 
@@ -102,9 +114,25 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
         }
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+            frameCount++;
             onUpdateSubject.onNext(surface);
+            if(frameCount%5 == 0){
+                displayAverageSpeed();
+            }
         }
     };
+
+    public void displayAverageSpeed(){
+        double average = 0;
+        DecimalFormat df = new DecimalFormat("#.###");
+        df.setRoundingMode(RoundingMode.CEILING);
+        for(Double d: speeds){
+            average = d + average;
+        }
+        if(speeds.size() > 0) average = average/speeds.size();
+        speedText.setText(df.format(average) + " MPH");
+        speeds.clear();
+    }
 
     private final CameraDevice.StateCallback stateCallback = new CameraDevice.StateCallback() {
         @Override
@@ -239,6 +267,14 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(capturePresenter::fetchSpeedData);
         Doppler.getInstance().beginCapture();
+        Doppler.getInstance().getSpeedObservable()
+                .onBackpressureDrop()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(this::speedCallback, e -> e.printStackTrace());
+    }
+
+    public void speedCallback(Double speed){
+        speeds.add(speed);
     }
 
     @Override
