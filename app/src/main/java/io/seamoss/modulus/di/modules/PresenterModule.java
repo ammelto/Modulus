@@ -23,4 +23,5 @@ public class PresenterModule {
 
     @Provides
     CapturePresenter providesCapturePresenter(){ return new CapturePresenter(); }
+
 }

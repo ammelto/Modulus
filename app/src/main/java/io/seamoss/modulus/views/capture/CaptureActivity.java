@@ -25,6 +25,7 @@ import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
 import android.view.TextureView;
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -72,6 +73,9 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
     @BindView(R.id.capture_speed)
     TextView speedText;
 
+    @BindView(R.id.capture_speed_max)
+    TextView speedTextMax;
+
     private String cameraId;
     private Size imageDimension;
     private List<Double> speeds;
@@ -80,6 +84,8 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
     private CameraCaptureSession cameraCaptureSessions;
     private PublishSubject<SurfaceTexture> onUpdateSubject;
     private Subscription updateSubsription;
+    private Subscription speedSubscription;
+    private double maxSpeed = 0;
     private int frameCount = 0;
 
     @Inject
@@ -96,7 +102,14 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
 
         onUpdateSubject = PublishSubject.create();
 
+        speedTextMax.setOnClickListener(this::speedTextMaxListener);
+
         File media = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Test.mp4");
+    }
+
+    public void speedTextMaxListener(View view){
+        speedTextMax.setText("MAX: 00 MPH");
+        maxSpeed = 0;
     }
 
     private TextureView.SurfaceTextureListener textureListener = new TextureView.SurfaceTextureListener() {
@@ -126,11 +139,21 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
         double average = 0;
         DecimalFormat df = new DecimalFormat("#.###");
         df.setRoundingMode(RoundingMode.CEILING);
+        int zeros = 0;
         for(Double d: speeds){
             average = d + average;
+            if(d == 0) zeros++;
         }
-        if(speeds.size() > 0) average = average/speeds.size();
-        speedText.setText(df.format(average) + " MPH");
+        if(speeds.size() > 0 && zeros != speeds.size()){
+            average = average/(speeds.size() - zeros);
+            speedText.setText(df.format(average) + " MPH");
+            if(average > maxSpeed){
+                speedTextMax.setText("MAX: " + df.format(average) + " MPH");
+                maxSpeed = average;
+            }
+        }else{
+            speedText.setText("00 MPH");
+        }
         speeds.clear();
     }
 
@@ -250,7 +273,10 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
         cameraDevice.close();
         cameraCaptureSessions.close();
         updateSubsription.unsubscribe();
+        updateSubsription = null;
         Doppler.getInstance().stopCapture();
+        speedSubscription.unsubscribe();
+        speedSubscription = null;
     }
 
     @Override
@@ -266,14 +292,18 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
                 .subscribeOn(AndroidSchedulers.from(capturePresenter.getHandler().getLooper()))
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(capturePresenter::fetchSpeedData);
+
         Doppler.getInstance().beginCapture();
-        Doppler.getInstance().getSpeedObservable()
+        speedSubscription = Doppler.getInstance().getSpeedObservable()
                 .onBackpressureDrop()
                 .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.newThread())
                 .subscribe(this::speedCallback, e -> e.printStackTrace());
+
     }
 
     public void speedCallback(Double speed){
+        Timber.d(speed + " ");
         speeds.add(speed);
     }
 

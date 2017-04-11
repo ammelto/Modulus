@@ -18,13 +18,36 @@
         android:layout_gravity="bottom"
         android:layout_height="56dp">
 
-        <TextView
-            android:id="@+id/capture_speed"
-            android:padding="16dp"
-            android:text="00 MPH"
-            android:textColor="@android:color/white"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent" />
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/capture_speed"
+                android:padding="16dp"
+                android:text="00 MPH"
+                android:textColor="@android:color/white"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:id="@+id/capture_speed_max"
+                android:padding="16dp"
+                android:text="MAX: 00 MPH"
+                android:textColor="@android:color/white"
+                android:layout_alignParentEnd="true"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent" />
+
+            <ImageView
+                android:layout_centerInParent="true"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_camera_black_24dp"
+                android:tint="@color/ms_white"
+                />
+        </RelativeLayout>
+
 
     </FrameLayout>
 

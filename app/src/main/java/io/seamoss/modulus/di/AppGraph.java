@@ -32,4 +32,5 @@ public interface AppGraph {
     void inject(SigninActivity signinActivity);
 
     void inject(CaptureActivity captureActivity);
+
 }
