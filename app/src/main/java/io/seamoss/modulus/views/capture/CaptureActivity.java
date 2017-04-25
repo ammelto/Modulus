@@ -2,6 +2,8 @@ package io.seamoss.modulus.views.capture;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.DashPathEffect;
 import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
@@ -14,6 +16,7 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -27,6 +30,7 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -67,6 +71,9 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
     @BindView(R.id.texture)
     TextureView textureView;
 
+    @BindView(R.id.capture_record)
+    ImageView recordButton;
+
     @BindView(R.id.overlay_capture)
     FrameLayout frameLayout;
 
@@ -76,6 +83,10 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
     @BindView(R.id.capture_speed_max)
     TextView speedTextMax;
 
+    private MediaRecorder mediaRecorder;
+    private boolean isRecording = false;
+    private Surface recorderSurface;
+    private String filePath;
     private String cameraId;
     private Size imageDimension;
     private List<Double> speeds;
@@ -103,8 +114,8 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
         onUpdateSubject = PublishSubject.create();
 
         speedTextMax.setOnClickListener(this::speedTextMaxListener);
+        recordButton.setOnClickListener(this::onRecordClick);
 
-        File media = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/Test.mp4");
     }
 
     public void speedTextMaxListener(View view){
@@ -134,6 +145,11 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
             }
         }
     };
+
+    public void onRecordClick(View view){
+        if(isRecording) stopRecording();
+        else beginRecording();
+    }
 
     public void displayAverageSpeed(){
         double average = 0;
@@ -223,11 +239,7 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
             matrix.postRotate(90 * (rotation - 2), centerX, centerY );
         }
 
-        Timber.d("TEXT WIDTH " + textureView.getWidth() + " TEX HEIGHT " + textureView.getHeight());
         textureView.setTransform(matrix);
-        Timber.d("TEXT WIDTH " + textureView.getWidth() + " TEX HEIGHT " + textureView.getHeight());
-        Timber.d("DIM WIDTH " + imageDimension.getWidth() + " DIM HEIGHT " + imageDimension.getHeight());
-        Timber.d("WIDTH " + width + " HEIGHT " + height);
 
     }
 
@@ -249,6 +261,7 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
     private void openCamera(){
         CameraManager cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
         try{
+            mediaRecorder = new MediaRecorder();
             cameraId = cameraManager.getCameraIdList()[0];
             CameraCharacteristics cameraCharacteristics = cameraManager.getCameraCharacteristics(cameraId);
             StreamConfigurationMap map = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
@@ -269,42 +282,154 @@ public class CaptureActivity extends BaseActivity implements CaptureView {
     @Override
     protected void onPause() {
         super.onPause();
-        capturePresenter.detachView();
-        cameraDevice.close();
-        cameraCaptureSessions.close();
-        updateSubsription.unsubscribe();
-        updateSubsription = null;
-        Doppler.getInstance().stopCapture();
-        speedSubscription.unsubscribe();
-        speedSubscription = null;
+        if(!isRecording) {
+            cameraDevice.close();
+            cameraCaptureSessions.close();
+
+            updateSubsription.unsubscribe();
+            updateSubsription = null;
+            Doppler.getInstance().stopCapture();
+            speedSubscription.unsubscribe();
+            speedSubscription = null;
+            capturePresenter.detachView();
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        capturePresenter.attachView(this);
-        if (textureView.isAvailable()) {
-            openCamera();
-        } else {
-            textureView.setSurfaceTextureListener(textureListener);
+        if(!isRecording) {
+            capturePresenter.attachView(this);
+            if (textureView.isAvailable()) {
+                openCamera();
+            } else {
+                textureView.setSurfaceTextureListener(textureListener);
+            }
+
+            updateSubsription = onUpdateSubject.asObservable()
+                    .subscribeOn(AndroidSchedulers.from(capturePresenter.getHandler().getLooper()))
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(capturePresenter::fetchSpeedData);
+
+            Doppler.getInstance().beginCapture();
+            speedSubscription = Doppler.getInstance().getSpeedObservable()
+                    .onBackpressureDrop()
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribeOn(Schedulers.newThread())
+                    .subscribe(this::speedCallback, e -> e.printStackTrace());
         }
-        updateSubsription = onUpdateSubject.asObservable()
-                .subscribeOn(AndroidSchedulers.from(capturePresenter.getHandler().getLooper()))
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(capturePresenter::fetchSpeedData);
 
-        Doppler.getInstance().beginCapture();
-        speedSubscription = Doppler.getInstance().getSpeedObservable()
-                .onBackpressureDrop()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeOn(Schedulers.newThread())
-                .subscribe(this::speedCallback, e -> e.printStackTrace());
 
+    }
+
+    private void closePreview(){
+        if(cameraCaptureSessions != null){
+            cameraCaptureSessions.close();
+            cameraCaptureSessions = null;
+        }
+    }
+
+    private void setupMediaRecorder() throws IOException{
+        mediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+        mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+        mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+        if(filePath == null || filePath.isEmpty()){
+            File path = Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_MOVIES);
+            File file = new File(path, System.currentTimeMillis() + ".mp4");
+            filePath = file.getAbsolutePath();
+            //file.createNewFile();
+        }
+        mediaRecorder.setOutputFile(filePath);
+        mediaRecorder.setVideoEncodingBitRate(10000000);
+        mediaRecorder.setVideoFrameRate(30);
+        mediaRecorder.setVideoSize(1920, 1080);
+        //mediaRecorder.setVideoSize(imageDimension.getWidth(), imageDimension.getHeight());
+        mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+        mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.DEFAULT);
+        int rotation = getWindowManager().getDefaultDisplay().getRotation();
+        mediaRecorder.setOrientationHint(rotation);
+        mediaRecorder.prepare();
+    }
+
+    private void beginRecording(){
+        if(cameraDevice == null || !textureView.isAvailable() || imageDimension == null) return;
+        isRecording = true;
+
+        try{
+            closePreview();
+            setupMediaRecorder();
+            SurfaceTexture surfaceTexture = textureView.getSurfaceTexture();
+            assert surfaceTexture != null;
+            surfaceTexture.setDefaultBufferSize(imageDimension.getWidth(), imageDimension.getHeight());
+            captureRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+            List<Surface> surfaces = new ArrayList<>();
+
+            Surface previewSurface = new Surface(surfaceTexture);
+            surfaces.add(previewSurface);
+            captureRequestBuilder.addTarget(previewSurface);
+
+            recorderSurface = mediaRecorder.getSurface();
+            surfaces.add(recorderSurface);
+            captureRequestBuilder.addTarget(recorderSurface);
+
+            cameraDevice.createCaptureSession(surfaces, new CameraCaptureSession.StateCallback() {
+
+                @Override
+                public void onConfigured(@NonNull CameraCaptureSession cameraCaptureSession) {
+                    cameraCaptureSessions = cameraCaptureSession;
+                    updatePreview();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            // UI
+                            recordButton.setBackgroundColor(Color.RED);
+
+                            // Start recording
+                            mediaRecorder.start();
+                        }
+                    });
+                }
+
+                @Override
+                public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
+                    isRecording = false;
+                    createFailToast();
+                }
+            }, capturePresenter.getHandler());
+        }catch (CameraAccessException e){
+            e.printStackTrace();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void stopRecording(){
+        isRecording = false;
+        recordButton.setBackgroundColor(Color.WHITE);
+        try{
+            mediaRecorder.stop();
+        }catch (RuntimeException e){
+            e.printStackTrace();
+        }
+        mediaRecorder.reset();
+
+        Toast.makeText(this, "Video saved: " + filePath , Toast.LENGTH_SHORT).show();
+        filePath = null;
+
+    }
+
+    public void createFailToast(){
+        Toast.makeText(this, "Failed", Toast.LENGTH_SHORT).show();
     }
 
     public void speedCallback(Double speed){
         Timber.d(speed + " ");
         speeds.add(speed);
+    }
+
+    private String getVideoFilePath(Context context) {
+        return context.getExternalFilesDir(null).getAbsolutePath().substring(8);
     }
 
     @Override

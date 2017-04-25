@@ -1,14 +1,19 @@
 package io.seamoss.modulus.hardware;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioRecord;
 import android.media.AudioTrack;
 import android.media.MediaRecorder;
 import android.media.MediaSync;
+import android.media.audiofx.AutomaticGainControl;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.widget.Toast;
 
 import org.jtransforms.fft.DoubleFFT_1D;
 import org.jtransforms.fft.DoubleFFT_2D;
@@ -32,7 +37,7 @@ import timber.log.Timber;
  * Created by Alexander Melton on 4/1/2017.
  */
 
-public class Doppler {
+public class Doppler extends BroadcastReceiver{
     private static Doppler instance;
     private int N;
     private Observable<Double> speedObservable = Observable.create(this::readSpeed);
@@ -62,6 +67,7 @@ public class Doppler {
         track = new AudioTrack(AudioManager.STREAM_MUSIC, 16000,
                 AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT, N*10, AudioTrack.MODE_STREAM);
         recorder.startRecording();
+
     }
 
     private void readSpeed(Subscriber subscriber){
@@ -105,8 +111,8 @@ public class Doppler {
                 speed = speed/0.44704;
                 if(movingAvg == 0) movingAvg = average;
                 else{
-                    if(maxMag > movingAvg + 200000){
-                        if(speed > 15) subscriber.onNext(speed);
+                    if(maxMag > movingAvg + 160000 || true){
+                        if(speed > 15 || true) subscriber.onNext(speed);
                         Timber.d("Freq: " + maxFreq + " Mag:" + maxMag + " Avg: " + movingAvg + " Speed: " + speed + "mph");
                     }
                     movingAvg = (average + movingAvg)/2;
@@ -129,4 +135,10 @@ public class Doppler {
         track = null;
     }
 
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        if(AudioManager.ACTION_AUDIO_BECOMING_NOISY.equals(intent.getAction())){
+            Toast.makeText(context, "NOISE", Toast.LENGTH_SHORT);
+        }
+    }
 }

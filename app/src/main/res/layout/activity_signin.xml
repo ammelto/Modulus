@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.design.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.design.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical"
+    style="@style/AppTheme"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
 
     <LinearLayout
+        android:fitsSystemWindows="true"
+        android:background="@color/colorPrimary"
         android:layout_width="match_parent"
         android:weightSum="2"
         android:orientation="vertical"
@@ -17,6 +21,13 @@
             android:layout_weight="1"
             android:layout_height="match_parent">
 
+            <ImageView
+                android:padding="16dp"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="fitXY"
+                android:src="@drawable/ic_modulus_icon"
+                android:tint="@color/ms_white"/>
 
         </RelativeLayout>
 
@@ -31,12 +42,10 @@
                 android:textColor="@color/colorPrimaryText"
                 android:text="@string/facebook_auth"
                 android:id="@+id/authentication_facebook_sign_in"
-                android:background="@android:color/white"
+                android:background="@color/ms_white"
                 android:layout_above="@+id/authentication_google_sign_in"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginEnd="8dp"
                 android:layout_marginBottom="16dp"/>
 
             <Button
@@ -44,12 +53,10 @@
                 android:textColor="@color/colorPrimaryText"
                 android:text="@string/google_auth"
                 android:id="@+id/authentication_google_sign_in"
-                android:background="@android:color/white"
+                android:background="@color/ms_white"
                 android:layout_above="@+id/authentication_guest_sign_in"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginEnd="8dp"
                 android:layout_marginBottom="16dp"/>
 
             <Button
@@ -57,12 +64,10 @@
                 android:textColor="@color/colorPrimaryText"
                 android:text="@string/guest_auth"
                 android:id="@+id/authentication_guest_sign_in"
-                android:background="@android:color/white"
+                android:background="@color/ms_white"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_alignParentBottom="true"
-                android:layout_marginStart="8dp"
-                android:layout_marginEnd="8dp"
                 android:layout_marginBottom="16dp"/>
 
         </RelativeLayout>

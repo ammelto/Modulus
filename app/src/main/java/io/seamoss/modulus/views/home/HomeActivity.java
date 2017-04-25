@@ -63,14 +63,16 @@ public class HomeActivity extends BaseNavActivity implements HomeView, CaptureCo
         if(getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FRONT)){
 
             if(ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
-                    ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED){
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
+                    ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
                 if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.CAMERA)
                         || ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)) {
                     ActivityCompat.requestPermissions(this,
-                            new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO}, VIDEO_REQUEST_CODE);
+                            new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, VIDEO_REQUEST_CODE);
                 } else {
                     ActivityCompat.requestPermissions(this,
-                            new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO}, VIDEO_REQUEST_CODE);
+                            new String[]{Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, VIDEO_REQUEST_CODE);
                 }
             }else{
                 Intent intent = new Intent(this, CaptureActivity.class);
